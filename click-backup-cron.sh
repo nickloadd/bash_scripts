@@ -1,9 +1,9 @@
-#Preparation:
-#Create click DB user with access to target database or tables and select on system.*
-#Install clickhouse-backup tool : https://github.com/AlexAkulov/clickhouse-backup
-#Create clickhouse-backup config with "backups_to_keep_local: 0" settings. For example, /etc/clickhouse-backup/config-monthly.yml
+##Preparation:
+##Create click DB user with access to target database or tables and select on system.*
+##Install clickhouse-backup tool : https://github.com/AlexAkulov/clickhouse-backup
+##Create clickhouse-backup config with "backups_to_keep_local: 0" settings. For example, /etc/clickhouse-backup/config-monthly.yml
 
-#Body of script:
+#B#ody of script:
 #!/bin/bash
 set +x
 period=$1
@@ -22,8 +22,8 @@ elif [[ "monthly" == "${period}" ]]; then
   clickhouse-backup upload "${backup_name}-${period}" -c /etc/clickhouse-backup/config-monthly.yml
 fi
 
-#Cron tabs:
-#Monthly job to make full backup
-0 0 1 * * /opt/click-backup.sh monthly
-#Daily job to make diff backup
-0 0 2-31 * * /opt/click-backup.sh daily
+##Cron tabs:
+##Monthly job to make full backup
+#0 0 1 * * /opt/click-backup.sh monthly
+##Daily job to make diff backup
+#0 0 2-31 * * /opt/click-backup.sh daily
