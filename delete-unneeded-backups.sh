@@ -7,3 +7,7 @@ do
   clickhouse-backup delete remote $remove_backup
   echo "$remove_backup was deleted from S3 storage"
 done
+
+##Cron tabs:
+##Monthly job to make full backup
+#0 0 2 * * /opt/delete-unneeded-backups.sh
