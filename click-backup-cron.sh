@@ -8,22 +8,41 @@
 set +x
 period=$1
 
+year=$(date +%Y)
+previous_month=$(date -d "`date +%Y-%m-01` -1day" +'%m')
 backup_name=$(date +%Y-%m-%d)
+#List of tables to backup
+tables=""
 
-if [[ "monthly" == "${period}" ]]; then
+if [[ "full" == "${period}" ]]; then
   echo "Removing old unneeded backups"
   clickhouse-backup list local | cut -d " " -f 1 | xargs -I {} clickhouse-backup delete local {}
+  while [ ! -z "$(clickhouse-backup list remote | grep "${year}-${previous_month}-[0-3][0-9]-diff")" ]
+  do
+    remove_backup=$(clickhouse-backup list remote | grep "${year}-${previous_month}-[0-3][0-9]-diff" | head -n 1 | cut -d " " -f 1)
+    clickhouse-backup delete remote ${remove_backup}
+    echo "${remove_backup} was deleted from S3 storage"
+  done
 fi
 
 echo "Creating local backup '${backup_name}-${period}'"
-clickhouse-backup create "${backup_name}-${period}"
+clickhouse-backup create --tables "${tables}" "${backup_name}-${period}"
 
-if [[ "daily" == "${period}" && "2" -le "$(clickhouse-backup list local | wc -l)" ]]; then
+if [[ "full" == "${period}" ]]; then
+  while [ ! -z "$(clickhouse-backup list remote | grep "${year}-${previous_month}-[0-3][0-9]-diff")" ]
+  do
+    remove_backup=$(clickhouse-backup list remote | grep "${year}-${previous_month}-[0-3][0-9]-diff" | head -n 1 | cut -d " " -f 1)
+    clickhouse-backup delete remote ${remove_backup}
+    echo "${remove_backup} was deleted from S3 storage"
+  done
+fi
+
+if [[ "diff" == "${period}" && "2" -le "$(clickhouse-backup list local | wc -l)" ]]; then
   prev_backup_name="$(clickhouse-backup list local | tail -n 2 | head -n 1 | cut -d " " -f 1)"
   echo "Uploading the backup '${backup_name}-${period}' as diff from the previous backup ('${prev_backup_name}')"
   clickhouse-backup upload --diff-from "${prev_backup_name}" "${backup_name}-${period}"
-elif [[ "monthly" == "${period}" ]]; then
-  echo "Uploading the backup '${backup_name}-${period}"
+elif [[ "full" == "${period}" ]]; then
+  echo "Uploading the backup ${backup_name}-${period}"
   clickhouse-backup upload "${backup_name}-${period}"
 fi
 
